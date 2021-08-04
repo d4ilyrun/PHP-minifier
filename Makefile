@@ -22,4 +22,4 @@ test: build dl_file
 	./parser $(TEST_FILE) $(shell cat $(TEST_FILE) | wc -c)
 
 clean:
-	rm -rf parser.o parser
+	rm -rf parser.o parser *.php

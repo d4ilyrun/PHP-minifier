@@ -7,6 +7,14 @@
     fprintf(stderr, "Error: %s\n", _msg); \
     return 1;
 
+int starts_with(char *s, char *tok, int tok_len)
+{
+    int test = 1;
+    for (int i = 0; i < tok_len && test; ++i)
+        test = s[i] == tok[i];
+    return test;
+}
+
 int find_next_token(char *s, int i) {
     // POSSIBLE TOKENS ARE:
     // " ' : comments
@@ -66,7 +74,11 @@ char *minifier(char *file_content, int file_size, int *out_size)
             } else if (FIND_TOKEN('{')) {
                 SKIP_INDEX();
             } else if (FIND_TOKEN('}')) {
-                SKIP_INDEX();
+                if (i < 3 || !starts_with(&file_content[i-3], "php", 3)) {
+                    SKIP_INDEX();
+                } else {
+                    ADD_INDEX();
+                }
             } else if (FIND_TOKEN('(')) {
                 SKIP_INDEX();
             } else if (FIND_TOKEN(')')) {
