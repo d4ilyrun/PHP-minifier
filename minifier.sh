@@ -6,40 +6,24 @@ if [[ $# -lt 1 ]]; then
     exit 1
 fi
 
-START_SIZE=`du -hsb | cut -f1`
-
-for PHP_FILE in `find $IN_DIR -name "*.php" -not -path "**/_dev/*"`; do
-    SIZE=`du -hsb $PHP_FILE | cut -f1`
-    MINIFIED=`php -w $PHP_FILE`
-    echo $MINIFIED > $PHP_FILE
-    SIZE=$(( SIZE - `du -hsb $PHP_FILE | cut -f1`))
-    echo "-- $PHP_FILE: saved $SIZE bytes"
-done
-
-END_SIZE=`du -hsb | cut -f1`
-SAVED_BYTES=$((START_SIZE - END_SIZE))
-
-echo "- $IN_DIR/: Saved $SAVED_BYTES bytes"
-exit 0
-
-##
-
-SCRIPT=`realpath -s $0`
+SAVED_BYTES=0
 IN_DIR=$1
 
+# Build parser
+make build
 
-# traite recursivement les dossiers contenu à la location
-for DIR in `find $IN_DIR -maxdepth 1 -type d`; do
-    if [[ `basename $DIR` != "_dev" ]] && [[ $DIR != $IN_DIR ]]; then
-        # ignore le dossier '_dev' et la recursion infinie
-        sh $SCRIPT $DIR
-    fi
-done
-
-# Créée une version minimisée et calcule les bytes économisés
-for PHP_FILE in `find $IN_DIR -maxdepth 1 -type f`; do
-    # remplace le fichier php par sa version minimisée
-    # `php -w` ne peut pas etre redirigé vers le fichier source
+for PHP_FILE in `find $IN_DIR -name "*.php" -not -path "**/_dev/*"`; do
+    # PHP -W
+    SIZE=`cat $PHP_FILE | wc -c`
     MINIFIED=`php -w $PHP_FILE`
     echo $MINIFIED > $PHP_FILE
+    WED_SIZE=`echo $MINIFIED | wc -c`
+    # C PARSER
+    ./parser $PHP_FILE $WED_SIZE
+    # CALCUL ECONOMIE
+    SAVED=$((SIZE - `cat $PHP_FILE | wc -c`))
+    SAVED_BYTES=$((SAVED_BYTES + SAVED))
+    echo "-- $PHP_FILE: saved $SAVED bytes"
 done
+
+echo "- $IN_DIR: Saved $SAVED_BYTES bytes"

@@ -1,28 +1,11 @@
-#include <stddef.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
+#include <stdio.h>  // fprintf
+#include <stdlib.h> // malloc
+#include <unistd.h> // read / write
+#include <fcntl.h>  // open
 
 #define ERR(_msg) \
     fprintf(stderr, "Error: %s\n", _msg); \
     return 1;
-
-/// Test if a strings starts with another and update its pointer if true
-int starts_with(char **s, char *token, size_t token_len)
-{
-    int is_eq = 1;
-
-    if (strlen(*s) < token_len)
-        return 0;
-
-    for (size_t i = 0; i < token_len && is_eq; ++i)
-        is_eq = *s[i] == token[i];
-    
-    if (is_eq) *s += token_len;
-    return is_eq;
-}
 
 int find_next_token(char *s, int i) {
     // POSSIBLE TOKENS ARE:
@@ -131,7 +114,6 @@ int main(int argc, char **argv)
     char *file_content, *minified_content;
     int file_size, minified_size;
     int fd;
-    FILE *file;
 
     if ((fd = open(argv[1], O_RDONLY)) == -1) {
         ERR("Couldn't open file");
@@ -152,9 +134,12 @@ int main(int argc, char **argv)
     // REWRITE THE MODIFIED CONTENT
     minified_content = minifier(file_content, file_size, &minified_size);
     write(fd, minified_content, minified_size);
-    close(fd);
 
-    printf("%s: Saved %d bytes through parsing\n", argv[1], file_size - minified_size);
+    close(fd);
+    free(minified_content);
+    free(file_content);
+
+    //printf("%s: Saved %d bytes through parsing\n", argv[1], file_size - minified_size);
 
     return 0;
 }
