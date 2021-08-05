@@ -36,6 +36,9 @@ int find_next_token(char *s, int i) {
 #define SKIP_INDEX() (i++)
 #define ADD_INDEX() (minified[i_min++] = file_content[i++])
 
+const char classic_tokens[] = {' ','{','(',')',';','*','+','-','=','<','>','!','?','.',',',':'};
+const int  classic_tokens_count = 16;
+
 char *minifier(char *file_content, int file_size, int *out_size)
 {
     int i = 0, i_min = 0;
@@ -82,46 +85,20 @@ char *minifier(char *file_content, int file_size, int *out_size)
                 if (file_content[i+1] == '\0') {
                     *out_size = i_min;
                     return minified;
-                } else if (FIND_TOKEN(' ')) {
-                    SKIP_INDEX();
-                } else if (FIND_TOKEN('{')) {
-                    SKIP_INDEX();
                 } else if (FIND_TOKEN('}')) {
                     if (i < 3 || !starts_with(&file_content[i-3], "php", 3)) {
                         SKIP_INDEX();
                     } else {
                         ADD_INDEX();
                     }
-                } else if (FIND_TOKEN('(')) {
-                    SKIP_INDEX();
-                } else if (FIND_TOKEN(')')) {
-                    SKIP_INDEX();
-                } else if (FIND_TOKEN(';')) {
-                    SKIP_INDEX();
-                } else if (FIND_TOKEN('*')) {
-                    SKIP_INDEX();
-                } else if (FIND_TOKEN('+')) {
-                    SKIP_INDEX();
-                } else if (FIND_TOKEN('-')) {
-                    SKIP_INDEX();
-                } else if (FIND_TOKEN('=')) {
-                    SKIP_INDEX();
-                } else if (FIND_TOKEN('>')) {
-                    SKIP_INDEX();
-                } else if (FIND_TOKEN('<')) {
-                    SKIP_INDEX();
-                } else if (FIND_TOKEN('!')) {
-                    SKIP_INDEX();
-                } else if (FIND_TOKEN('?')) {
-                    SKIP_INDEX();
-                } else if (FIND_TOKEN('.')) {
-                    SKIP_INDEX();
-                } else if (FIND_TOKEN(',')) {
-                    SKIP_INDEX();
-                } else if (FIND_TOKEN(':')) {
-                    SKIP_INDEX();
                 } else {
-                    ADD_INDEX();
+                    int found = 0;
+                    for (int j = 0; j < classic_tokens_count && !found; ++j) {
+                        if ((found = FIND_TOKEN(classic_tokens[j])))
+                            SKIP_INDEX();
+                    }
+                    if (!found)
+                        ADD_INDEX();
                 }
                 break;
             default:
