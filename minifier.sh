@@ -16,7 +16,7 @@ for PHP_FILE in `find $IN_DIR -name "*.php" -not -path "**/_dev/*"`; do
     # PHP -W
     SIZE=`cat $PHP_FILE | wc -c`
     MINIFIED=`php -w $PHP_FILE`
-    echo $MINIFIED > $PHP_FILE
+    echo "$MINIFIED" > $PHP_FILE
     WED_SIZE=`echo $MINIFIED | wc -c`
     # C PARSER
     ./parser $PHP_FILE $WED_SIZE
