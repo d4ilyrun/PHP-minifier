@@ -17,12 +17,15 @@ int starts_with(char *s, char *tok, int tok_len)
 
 int find_next_token(char *s, int i) {
     // POSSIBLE TOKENS ARE:
-    // " ' < : comments
+    // " ' : strings
+    // // /* < : comments
     // space
-    // \0
+    // \n \t \r : line break
+    // \0 : EOF
     
     while (s[i]) {
-        if (s[i] == ' ' || s[i] == '"' || s[i] == '<' || s[i] == '\'') {
+        if (s[i] == ' ' || s[i] == '"' || s[i] == '<' || s[i] == '\'' || s[i] == '/'
+                || s[i] == '\n' || s[i] == '\t' || s[i] == '\r') {
             return i;
         } else {
             i++;
@@ -36,8 +39,8 @@ int find_next_token(char *s, int i) {
 #define SKIP_INDEX() (i++)
 #define ADD_INDEX() (minified[i_min++] = file_content[i++])
 
-const char classic_tokens[] = {' ','{','(',')',';','*','+','-','=','<','>','!','?','.',',',':'};
-const int  classic_tokens_count = 16;
+const char classic_tokens[] = {' ','{','(',')',';','*','/','&','^','+','-','=','<','>','!','?','.',',',':','|','&'};
+const int  classic_tokens_count = 21;
 
 char *minifier(char *file_content, int file_size, int *out_size)
 {
@@ -70,6 +73,18 @@ char *minifier(char *file_content, int file_size, int *out_size)
                     ADD_INDEX();
                 ADD_INDEX();
                 break;
+            case '/':
+                if (file_content[i+1] == '/') {
+                    while (file_content[i] != '\n')
+                        SKIP_INDEX();
+                } else if (file_content[i+1] == '*') {
+                    SKIP_INDEX();
+                    SKIP_INDEX();
+                    while (i < file_size && (file_content[i] != '/' || file_content[i-1] != '*'))
+                        SKIP_INDEX();
+                    SKIP_INDEX();
+                }
+                break;
             case '<':
                 if (starts_with(&file_content[i], "<!--", 4)) {
                     // HTML COMMENT
@@ -80,16 +95,20 @@ char *minifier(char *file_content, int file_size, int *out_size)
                     ADD_INDEX();
                 }
                 break;
+            case '\n':
+            case '\t':
+            case '\r':
+                file_content[i] = ' ';
             case ' ':
                 // TOKENS
                 if (file_content[i+1] == '\0') {
                     *out_size = i_min;
                     return minified;
                 } else if (FIND_TOKEN('}')) {
-                    if (i < 3 || !starts_with(&file_content[i-3], "php", 3)) {
-                        SKIP_INDEX();
-                    } else {
+                    if (i > 3 && starts_with(&file_content[i-3], "php", 3)) {
                         ADD_INDEX();
+                    } else {
+                        SKIP_INDEX();
                     }
                 } else {
                     int found = 0;

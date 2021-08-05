@@ -5,7 +5,7 @@ Please don't use it during development, unless you like suffering ...
 
 ## How to use it ?
 
-```
+```shell
 sh minifier.sh 'src/'
 ```
 This will minify every `.php` files contained in the `src` directory, except those inside the ignored subdirectories.
@@ -23,6 +23,5 @@ for PHP_FILE in `find $IN_DIR -name "*.php" -not -path "**/_dev/*"`
 
 ## Prerequesites
 
-- PHP (obviously)
 - GCC
 
