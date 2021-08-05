@@ -14,9 +14,9 @@ build: parser.o
 	$(CC) $(CFLAGS) -c $< -o $@
 
 dl_file:
-	curl -L $(TEST_FILE_LINK) -o tmp
-	php -w tmp > $(TEST_FILE)
-	rm -rf tmp
+	curl -L $(TEST_FILE_LINK) -o tmp.php
+	php -w tmp.php > $(TEST_FILE)
+	rm -f tmp.php
 
 test: build dl_file
 	./parser $(TEST_FILE) $(shell cat $(TEST_FILE) | wc -c)

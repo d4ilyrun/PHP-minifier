@@ -4,7 +4,7 @@
 #include <fcntl.h>  // open
 
 #define ERR(_msg) \
-    fprintf(stderr, "Error: %s\n", _msg); \
+    fprintf(stderr, "%d - Error: %s\n", __LINE__, _msg); \
     return 1;
 
 int starts_with(char *s, char *tok, int tok_len)
@@ -17,12 +17,12 @@ int starts_with(char *s, char *tok, int tok_len)
 
 int find_next_token(char *s, int i) {
     // POSSIBLE TOKENS ARE:
-    // " ' : comments
+    // " ' < : comments
     // space
     // \0
     
     while (s[i]) {
-        if (s[i] == ' ' || s[i] == '"' || s[i] == '\'') {
+        if (s[i] == ' ' || s[i] == '"' || s[i] == '<' || s[i] == '\'') {
             return i;
         } else {
             i++;
@@ -48,68 +48,86 @@ char *minifier(char *file_content, int file_size, int *out_size)
         int next_i = find_next_token(file_content, i);
         while (i < next_i)
             ADD_INDEX();
-        if (file_content[i] == '\0') {
-            // EOF
-            *out_size = i_min;
-            return minified;
-        } else if (file_content[i] == '"') {
-            // DOUBLE QUOTED STRING
-            ADD_INDEX();
-            while(i < file_size && file_content[i] != '"')
-                ADD_INDEX();
-            ADD_INDEX();
-        } else if (file_content[i] == '\'') {
-            // SINGLE QUOTED STRING
-            ADD_INDEX();
-            while(i < file_size && file_content[i] != '\'')
-                ADD_INDEX();
-            ADD_INDEX();
-        } else if (file_content[i] == ' ') {
-            // TOKENS
-            if (file_content[i+1] == '\0') {
+        switch (file_content[i]) {
+            case '\0':
+                // EOF
                 *out_size = i_min;
                 return minified;
-            } else if (FIND_TOKEN(' ')) {
-                SKIP_INDEX();
-            } else if (FIND_TOKEN('{')) {
-                SKIP_INDEX();
-            } else if (FIND_TOKEN('}')) {
-                if (i < 3 || !starts_with(&file_content[i-3], "php", 3)) {
+            case '"':
+                // DOUBLE QUOTED STRING
+                ADD_INDEX();
+                while(i < file_size && file_content[i] != '"')
+                    ADD_INDEX();
+                ADD_INDEX();
+                break;
+            case '\'':
+                // SINGLE QUOTED STRING
+                ADD_INDEX();
+                while(i < file_size && file_content[i] != '\'')
+                    ADD_INDEX();
+                ADD_INDEX();
+                break;
+            case '<':
+                if (starts_with(&file_content[i], "<!--", 4)) {
+                    // HTML COMMENT
+                    i += 4;
+                    while (i < file_size && (file_content[i-1] != '>' || starts_with(&file_content[i-4], "-->", 3)))
+                        SKIP_INDEX();
+                } else {
+                    ADD_INDEX();
+                }
+                break;
+            case ' ':
+                // TOKENS
+                if (file_content[i+1] == '\0') {
+                    *out_size = i_min;
+                    return minified;
+                } else if (FIND_TOKEN(' ')) {
+                    SKIP_INDEX();
+                } else if (FIND_TOKEN('{')) {
+                    SKIP_INDEX();
+                } else if (FIND_TOKEN('}')) {
+                    if (i < 3 || !starts_with(&file_content[i-3], "php", 3)) {
+                        SKIP_INDEX();
+                    } else {
+                        ADD_INDEX();
+                    }
+                } else if (FIND_TOKEN('(')) {
+                    SKIP_INDEX();
+                } else if (FIND_TOKEN(')')) {
+                    SKIP_INDEX();
+                } else if (FIND_TOKEN(';')) {
+                    SKIP_INDEX();
+                } else if (FIND_TOKEN('*')) {
+                    SKIP_INDEX();
+                } else if (FIND_TOKEN('+')) {
+                    SKIP_INDEX();
+                } else if (FIND_TOKEN('-')) {
+                    SKIP_INDEX();
+                } else if (FIND_TOKEN('=')) {
+                    SKIP_INDEX();
+                } else if (FIND_TOKEN('>')) {
+                    SKIP_INDEX();
+                } else if (FIND_TOKEN('<')) {
+                    SKIP_INDEX();
+                } else if (FIND_TOKEN('!')) {
+                    SKIP_INDEX();
+                } else if (FIND_TOKEN('?')) {
+                    SKIP_INDEX();
+                } else if (FIND_TOKEN('.')) {
+                    SKIP_INDEX();
+                } else if (FIND_TOKEN(',')) {
+                    SKIP_INDEX();
+                } else if (FIND_TOKEN(':')) {
                     SKIP_INDEX();
                 } else {
                     ADD_INDEX();
                 }
-            } else if (FIND_TOKEN('(')) {
-                SKIP_INDEX();
-            } else if (FIND_TOKEN(')')) {
-                SKIP_INDEX();
-            } else if (FIND_TOKEN(';')) {
-                SKIP_INDEX();
-            } else if (FIND_TOKEN('*')) {
-                SKIP_INDEX();
-            } else if (FIND_TOKEN('+')) {
-                SKIP_INDEX();
-            } else if (FIND_TOKEN('-')) {
-                SKIP_INDEX();
-            } else if (FIND_TOKEN('=')) {
-                SKIP_INDEX();
-            } else if (FIND_TOKEN('>')) {
-                SKIP_INDEX();
-            } else if (FIND_TOKEN('<')) {
-                SKIP_INDEX();
-            } else if (FIND_TOKEN('!')) {
-                SKIP_INDEX();
-            } else if (FIND_TOKEN('?')) {
-                SKIP_INDEX();
-            } else if (FIND_TOKEN('.')) {
-                SKIP_INDEX();
-            } else if (FIND_TOKEN(',')) {
-                SKIP_INDEX();
-            } else if (FIND_TOKEN(':')) {
-                SKIP_INDEX();
-            } else {
-                ADD_INDEX();
-            }
+                break;
+            default:
+                fprintf(stderr, "%d - Error: unrecognised token '%c'", __LINE__, file_content[i]);
+                *out_size = 0;
+                return NULL;
         }
     }
 
@@ -144,7 +162,8 @@ int main(int argc, char **argv)
     }
 
     // REWRITE THE MODIFIED CONTENT
-    minified_content = minifier(file_content, file_size, &minified_size);
+    if ((minified_content = minifier(file_content, file_size, &minified_size)) == NULL)
+        return 1;
     write(fd, minified_content, minified_size);
 
     close(fd);
