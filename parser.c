@@ -35,12 +35,29 @@ int find_next_token(char *s, int i) {
     return i;
 }
 
-#define FIND_TOKEN(_tok) (file_content[i-1] == (_tok) || file_content[i+1] == (_tok))
+#define FIND_TOKEN(_tok) (minified[i_min-1] == (_tok) || file_content[i+1] == (_tok))
+
+#ifdef DEBUG
+#define DEBUG_INDEX(_i, _len) do {\
+    if (_i >= _len && i < file_size - _len) {\
+        printf("[%d] - ", _i);\
+        for (int j = -_len; j <= _len; ++j) {\
+            if (j == 0 || j == 1) printf("|");\
+            printf("%c", file_content[_i+j]);\
+        }\
+        char *tmp;\
+        scanf("%c\n",tmp);\
+    }\
+}while(0);
+#else
+#define DEBUG_INDEX(_i,_len)
+#endif
+
 #define SKIP_INDEX() (i++)
 #define ADD_INDEX() (minified[i_min++] = file_content[i++])
 
-const char classic_tokens[] = {' ','{','(',')',';','*','/','&','^','+','-','=','<','>','!','?','.',',',':','|','&'};
-const int  classic_tokens_count = 21;
+const char classic_tokens[] = {' ','{','(',')',';','*','/','&','^','+','-','=','<','>','!','?','.',',',':','|','&','\n','\r','\t'};
+const int  classic_tokens_count = 24;
 
 char *minifier(char *file_content, int file_size, int *out_size)
 {
@@ -54,6 +71,7 @@ char *minifier(char *file_content, int file_size, int *out_size)
         int next_i = find_next_token(file_content, i);
         while (i < next_i)
             ADD_INDEX();
+        DEBUG_INDEX(i, 3);
         switch (file_content[i]) {
             case '\0':
                 // EOF
@@ -75,7 +93,7 @@ char *minifier(char *file_content, int file_size, int *out_size)
                 break;
             case '/':
                 if (file_content[i+1] == '/') {
-                    while (file_content[i] != '\n')
+                    while (i < file_size && file_content[i] != '\n')
                         SKIP_INDEX();
                 } else if (file_content[i+1] == '*') {
                     SKIP_INDEX();
@@ -83,6 +101,8 @@ char *minifier(char *file_content, int file_size, int *out_size)
                     while (i < file_size && (file_content[i] != '/' || file_content[i-1] != '*'))
                         SKIP_INDEX();
                     SKIP_INDEX();
+                } else {
+                    ADD_INDEX();
                 }
                 break;
             case '<':

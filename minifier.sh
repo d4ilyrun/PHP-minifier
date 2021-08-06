@@ -12,12 +12,9 @@ IN_DIR=$1
 # Build parser
 make build
 
-for PHP_FILE in `find $IN_DIR -name "*.php" -not -path "**/_dev/*"`; do
-    # PHP -W
+for PHP_FILE in `find $IN_DIR -name '*.php' -not -path '**/_dev/*'`; do
     SIZE=`cat $PHP_FILE | wc -c`
-    # C PARSER
-    ./parser $PHP_FILE $SIZE
-    # CALCUL ECONOMIE
+    ./parser "$PHP_FILE" $SIZE
     SAVED=$((SIZE - `cat $PHP_FILE | wc -c`))
     SAVED_BYTES=$((SAVED_BYTES + SAVED))
     echo "-- $PHP_FILE: saved $SAVED bytes"

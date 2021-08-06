@@ -8,7 +8,7 @@ all: main
 main: build dl_file
 
 build: parser.o
-	$(CC) $^ -o parser
+	$(CC) -fsanitize=address $^ -o parser
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -19,5 +19,11 @@ dl_file:
 test: build dl_file
 	./parser $(TEST_FILE) $(shell cat $(TEST_FILE) | wc -c)
 
+debug: CFLAGS+=-DDEBUG
+debug: all
+
 clean:
 	rm -rf parser.o parser *.php
+
+.PHONY: all main clean test build
+
